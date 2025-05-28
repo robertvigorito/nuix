@@ -1,0 +1,73 @@
+[tool.poetry]
+name = "nuix"
+version = "0.1.0"
+description = "NUIX (Nuke User Interface Experience) is a custom GUI toolkit designed in Qt and for standardizing the look and feel of Nuke's user interface."
+authors = ["Rob <robertvigorito@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+pyside2 = "^5.15.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+mypy = "^1.15.0"
+isort = {extras = ["color"], version = "^6.0.1"}
+ruff = "^0.9.5"
+pytest-cov = "^6.0.0"
+pylint = "^3.3.7"
+colorama = "^0.4.6"
+pytest-qt = "^4.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = true
+envlist = py310,py311,py312
+
+[testenv]
+allowlist_externals = poetry,echo
+commands =
+    poetry install -v
+    poetry run pylint ./src
+    poetry run pytest
+"""
+
+# Pytest Setup
+[tool.pytest]
+addopts = "-s -rap"
+testpaths = ["tests"]
+
+
+
+# Black Setup
+[tool.black]
+line-length = 120
+
+# Pylint Setup
+[tool.pylint]
+max-line-length = 120
+disable = ["too-few-public-methods"]
+
+[tool.pylint.'MESSAGES CONTROL']
+# Optional: Disable specific warnings globally
+disable = [
+    "c-extension-no-member",  # Disable if you trust PySide2 and want no warnings at all
+]
+# Isort Setup
+[tool.isort]
+line_length = 120
+profile = "black"
+
+[tool.mypy]
+follow_imports = "normal"
