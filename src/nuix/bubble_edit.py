@@ -25,10 +25,9 @@ class Bubbles(_QtWidgets.QPushButton):
         # Set the default values
         padding = kwargs.get("padding", 20)
         self.setFixedHeight(kwargs.get("height", 20))
-        # Set the width to wrap the text
-        self.setFixedWidth(self.fontMetrics().width(text) + padding)
+        # Use horizontalAdvance instead of width to calculate text width
+        self.setFixedWidth(self.fontMetrics().horizontalAdvance(text) + padding)
         self.setContentsMargins(*content_margins)
-        # self.setStyleSheet(self.STYLE_SHEET)
         self.setStyleSheet(self.STYLE_SHEET.format(color="rgb(170, 100, 5)", font_color="white", border="0px"))
 
     @classmethod
@@ -207,32 +206,32 @@ class BubbleWrap:
         return item in self.get_tags()
 
 
-class DropDownTagger(_QtWidgets.QWidget):
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
+# class DropDownTagger(_QtWidgets.QWidget):
+#     def __init__(self, parent=None) -> None:
+#         super().__init__(parent)
 
-        self.form_layout = _QtWidgets.QFormLayout()
-        self.setLayout(self.form_layout)
+#         self.form_layout = _QtWidgets.QFormLayout()
+#         self.setLayout(self.form_layout)
 
-        tag = BubbleWrap(items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0)
+#         tag = BubbleWrap(items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0)
 
-        self.form_layout.addRow("Labels", tag.widget)
-        self.delete_me()
+#         self.form_layout.addRow("Labels", tag.widget)
+#         self.delete_me()
 
-    def delete_me(self):
-        self.setGeometry(0, 0, 300, 200)
-        screen = _QtWidgets.QApplication.primaryScreen()
-        screen_size = screen.size()
-        window_size = self.size()
-        x = (screen_size.width() - window_size.width()) / 2
-        y = (screen_size.height() - window_size.height()) / 2 - 300
-        self.move(x, y)
+#     def delete_me(self):
+#         self.setGeometry(0, 0, 300, 200)
+#         screen = _QtWidgets.QApplication.primaryScreen()
+#         screen_size = screen.size()
+#         window_size = self.size()
+#         x = (screen_size.width() - window_size.width()) / 2
+#         y = (screen_size.height() - window_size.height()) / 2 - 300
+#         self.move(x, y)
 
 
-if __name__ == "__main__":
-    import sys
+# if __name__ == "__main__":
+#     import sys
 
-    app = _QtWidgets.QApplication(sys.argv)
-    window = DropDownTagger()
-    window.show()
-    sys.exit(app.exec_())
+#     app = _QtWidgets.QApplication(sys.argv)
+#     window = DropDownTagger()
+#     window.show()
+#     sys.exit(app.exec_())
