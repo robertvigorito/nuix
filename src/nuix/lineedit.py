@@ -10,7 +10,7 @@ from PySide2 import QtWidgets as _QtWidgets
 class LineEditValidator(_QtWidgets.QLineEdit):  # pylint: disable=too-few-public-methods
     """The line edit with a validator."""
 
-    VALIDATOR_PATTERN = r"[a-zA-Z]+[a-zA-Z0-9_]+"
+    DEFAULT_VALIDATOR_PATTERN = r"[a-zA-Z]+[a-zA-Z0-9_]+"
 
     def __init__(self, parent=None, text="", validator=None) -> None:
         """The initiation method.
@@ -21,7 +21,8 @@ class LineEditValidator(_QtWidgets.QLineEdit):  # pylint: disable=too-few-public
         """
         super().__init__(parent)
         self.setText(str(text))
-        self.setValidator(_QtGui.QRegExpValidator(validator or self.VALIDATOR_PATTERN))  # type: ignore
+        self.setValidator(_QtGui.QRegExpValidator(validator or self.DEFAULT_VALIDATOR_PATTERN))  # type: ignore
+        self.VALIDATOR_PATTERN = validator or self.DEFAULT_VALIDATOR_PATTERN
         self.setClearButtonEnabled(True)
 
 
