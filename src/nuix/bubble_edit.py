@@ -2,6 +2,7 @@
 
 import dataclasses as _dataclasses
 import re as _re
+import typing as _typing
 
 from PySide2 import QtCore as _QtCore
 from PySide2 import QtGui as _QtGui
@@ -19,6 +20,13 @@ class Bubbles(_QtWidgets.QPushButton):
     """
 
     def __init__(self, text="", parent=None, **kwargs) -> None:
+        """Initialize the Bubbles widget.
+
+        Args:
+            text (str, optional): The text to display on the bubble. Defaults to "".
+            parent (QWidget, optional): The parent widget. Defaults to None.
+            **kwargs: Additional keyword arguments for customization.
+        """
         super().__init__(text, parent)
         content_margins = kwargs.get("content_margins", (0, 0, 0, 0))
 
@@ -38,7 +46,7 @@ class Bubbles(_QtWidgets.QPushButton):
             text (str, optional): The text to display on the label. Defaults to "".
 
         Returns:
-            TagLabel: The created tag label.
+            Bubbles: The created syntax label.
         """
         syntax_label = cls(text)
         # Make the color light purple
@@ -72,9 +80,18 @@ class LineEditWithBubbles(_LineEditWithCompleter):
 
     SEPARATOR = "[_]"
     TAG_PADDING = 2  # Padding between tags
+    LIMIT = -1  # Default limit for the number of tags, -1 means no limit
 
     def __init__(self, parent=None, items=None, text="", validator=None, **kwargs) -> None:
-        """Initialize the LineEditWithBubbles widget."""
+        """Initialize the LineEditWithBubbles widget.
+
+        Args:
+            parent (QWidget, optional): The parent widget. Defaults to None.
+            items (list[str], optional): List of items for completion. Defaults to None.
+            text (str, optional): Initial text for the widget. Defaults to "".
+            validator (QValidator, optional): Validator for the input. Defaults to None.
+            **kwargs: Additional keyword arguments for customization.
+        """
         super().__init__(parent, items=items, text=text, validator=validator)
         self.LIMIT = kwargs.get("limit", 10)  # Maximum number of tags allowed
         self.tags: list[Bubbles] = []
@@ -87,21 +104,54 @@ class LineEditWithBubbles(_LineEditWithCompleter):
 
         # Clear the text once the complete does its job
         self.completer().activated.connect(lambda: _QtCore.QTimer.singleShot(0, self.clear))
+        self.editingFinished.connect(self.editing_finished_trigger)
 
-    def insert_tag(self, text: str, style: Bubbles) -> bool:
-        """Insert a tag with the given text and style.
+    def get_syntax_label(self, text: str) -> _typing.Optional[Bubbles]:
+        """Get a syntax label with the given text.
+
+        Args:
+            text (str): The text to display on the label.
+
+        Returns:
+            Optional[Bubbles]: The created syntax label or None if invalid.
+        """
+        text = text.strip() or self.text().strip()
+        if not text:
+            return None
+        # Check if the limit of tags has been reached
+        if self.LIMIT > 0 and len(self.tags) >= self.LIMIT:
+            return None
+
+        # Split the text using the separator and validate each part
+        for split_text in _re.split(self.SEPARATOR, text):
+            split_text = split_text.strip()
+            if not split_text or split_text in self.tag_names() or split_text not in self.complete_items:
+                continue
+            return Bubbles(text=split_text)
+        if _re.findall(self.SEPARATOR, text):
+            if text in self.SEPARATOR:
+                return Bubbles.syntax_label(text=text.strip())
+            return Bubbles.plain_label(text=text.strip())
+        return None
+
+    def insert_tag(self, text: str) -> bool:
+        """Insert a tag with the given text.
 
         Args:
             text (str): The text to display on the tag.
-            style (Bubbles): The style of the tag.
 
         Returns:
             bool: True if the tag was inserted successfully, False otherwise.
         """
-        if self.LIMIT and len(self.tags) >= self.LIMIT:
+        if not text:
+            return False
+        if not text or (self.LIMIT and len(self.tags) >= self.LIMIT):
+            return False
+        # Check if the text is empty or already exists in the tags
+        label = self.get_syntax_label(text)
+        if not label:
             return False
 
-        label = style(text.strip())
         self.tags.append(label)
         self.layout().addWidget(label)
         self.setTextMargins(self.tags_width(), 0, 0, 0)
@@ -110,6 +160,11 @@ class LineEditWithBubbles(_LineEditWithCompleter):
         return True
 
     def keyPressEvent(self, event) -> None:
+        """Handle key press events to manage bubble editing.
+
+        Args:
+            event (QKeyEvent): The key press event.
+        """
         # Remove the last bubble if backspace is pressed
         if event.key() == _QtCore.Qt.Key_Backspace and self.tags and not self.text():
             self.tags.pop().deleteLater()
@@ -117,31 +172,18 @@ class LineEditWithBubbles(_LineEditWithCompleter):
             return None
         # Order of the super matter when handling text conversion to bubbles.
         super().keyPressEvent(event)
-        # Cross cheeck to the limit of the tags
-        if self.LIMIT and len(self.tags) >= self.LIMIT:
-            return None
-        for split_text in _re.split(self.SEPARATOR, self.text()) or [self.text()]:
-            if split_text not in self.complete_items or split_text in self.tag_names():
-                continue
-            self.insert_tag(split_text, Bubbles)
-
-        # Add the syntax label if the text is a valid syntax
-        separator_match = _re.findall(self.SEPARATOR, self.text())
-        if self.text() and separator_match:
-            bubble = Bubbles.plain_label
-            if self.text() == separator_match[-1]:
-                bubble = Bubbles.syntax_label
-            self.insert_tag(self.text(), bubble)
-
+        # Handle the tag insertion.
+        self.insert_tag(self.text().strip())
+        # Dont remove, required to allow separators to be used if there is a tag in the line edit.
         self.editing_finished_trigger()
 
         return None
 
     def editing_finished_trigger(self) -> bool:
-        """If we have tags in the line edit we should allow for separators to be used
+        """Update the validator pattern based on the presence of tags.
 
         Returns:
-            bool: True if the editing finished, False otherwise.
+            bool: True if the editing finished successfully.
         """
         validation_string = self.VALIDATOR_PATTERN
 
@@ -171,7 +213,28 @@ class LineEditWithBubbles(_LineEditWithCompleter):
 
 @_dataclasses.dataclass(eq=True, order=True)
 class BubbleWrap:
-    """The class is a container of the widget to reduce the noise of py when interacting with the class."""
+    """A container class for managing the LineEditWithBubbles widget.
+
+    Example:
+        >>> bubble_wrap = BubbleWrap(items=["apple", "banana", "cherry"], limit=5, text="Initial text")
+        >>> bubble_wrap.set_text("New tag")
+        >>> print(bubble_wrap.get_tags())
+        >>> print(bubble_wrap.join_tags(separator=", "))
+    
+
+    Args:
+        items (list[str], optional): List of items for the bubble editor. Defaults to an empty list.
+        limit (int, optional): Maximum number of tags allowed. Defaults to 10.
+        text (str, optional): Initial text for the bubble editor. Defaults to an empty string.
+        validator (str, optional): Validator pattern for the input. Defaults to an empty string.
+
+    Attributes:
+        items (list[str]): List of items for the bubble editor.
+        limit (int): Maximum number of tags allowed.
+        text (str): Initial text for the bubble editor.
+        validator (str): Validator pattern for the input.
+        widget (LineEditWithBubbles): The LineEditWithBubbles widget instance.
+    """
 
     items: list[str] = _dataclasses.field(default_factory=list)
     limit: int = _dataclasses.field(default=10)
@@ -194,6 +257,37 @@ class BubbleWrap:
         """
         return self.widget.tag_names()
 
+    def get_text(self) -> str:
+        """Get the text from the widget.
+
+        Returns:
+            str: The text from the widget.
+        """
+        return self.widget.text().strip()
+
+    def join_tags(self, separator="") -> str:
+        """Get the tags as a joined string.
+
+        Args:
+            separator (str, optional): The separator to use between tags. Defaults to "".
+
+        Returns:
+            str: The joined tags string.
+        """
+        return separator.join(self.get_tags()) + self.widget.text().strip()
+
+    def set_text(self, text: str) -> bool:
+        """Set the text in the widget.
+
+        Args:
+            text (str): The text to set in the widget.
+
+        Returns:
+            bool: True if the tag was inserted successfully, False otherwise.
+        """
+        self.widget.setText(text.strip())
+        return self.widget.insert_tag(text.strip())
+
     def __contains__(self, item: str) -> bool:
         """Check if the item is in the tags.
 
@@ -213,9 +307,11 @@ class BubbleWrap:
 #         self.form_layout = _QtWidgets.QFormLayout()
 #         self.setLayout(self.form_layout)
 
-#         tag = BubbleWrap(items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0)
+#         self.tag = BubbleWrap(
+#             items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0
+#         )
 
-#         self.form_layout.addRow("Labels", tag.widget)
+#         self.form_layout.addRow("Labels", self.tag.widget)
 #         self.delete_me()
 
 #     def delete_me(self):
@@ -234,4 +330,7 @@ class BubbleWrap:
 #     app = _QtWidgets.QApplication(sys.argv)
 #     window = DropDownTagger()
 #     window.show()
+#     window.tag.set_text("banana")
+#     window.tag.set_text("banana_")
+#     window.tag.set_text("_")
 #     sys.exit(app.exec_())

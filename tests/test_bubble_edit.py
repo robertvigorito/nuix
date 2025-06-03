@@ -2,8 +2,8 @@
 
 import pytest
 from PySide2 import QtCore
-from nuix.bubble_edit import LineEditWithBubbles, Bubbles
 
+from nuix.bubble_edit import LineEditWithBubbles
 
 BUBBLE_ITEMS = ["apple", "banana", "cherry", "date"]
 
@@ -24,17 +24,17 @@ def test_insert_tag(qtbot, bubble_line_edit):
     line_edit = bubble_line_edit
 
     # Insert a valid tag
-    assert line_edit.insert_tag("apple", Bubbles.syntax_label), "Tag should be inserted successfully"
+    assert line_edit.insert_tag("apple"), "Tag should be inserted successfully"
     assert "apple" in line_edit.tag_names(), "Tag name should be present in the list of tags"
 
     # Insert another valid tag
-    assert line_edit.insert_tag("banana", Bubbles.plain_label), "Tag should be inserted successfully"
+    assert line_edit.insert_tag("banana"), "Tag should be inserted successfully"
     assert "banana" in line_edit.tag_names(), "Tag name should be present in the list of tags"
 
     # Exceed the limit
     for _ in range(3):
-        line_edit.insert_tag("extra", Bubbles.plain_label)
-    assert not line_edit.insert_tag("overflow", Bubbles.plain_label), "Tag insertion should fail when limit is exceeded"
+        line_edit.insert_tag("extra")
+    assert not line_edit.insert_tag("overflow"), "Tag insertion should fail when limit is exceeded"
 
 
 def test_key_press_event(qtbot, bubble_line_edit):
@@ -42,7 +42,7 @@ def test_key_press_event(qtbot, bubble_line_edit):
     line_edit = bubble_line_edit
 
     # Insert a tag and simulate backspace key press
-    line_edit.insert_tag("apple", Bubbles.syntax_label)
+    line_edit.insert_tag("apple")
     assert "apple" in line_edit.tag_names(), "Tag name should be present in the list of tags"
 
     qtbot.keyPress(line_edit, QtCore.Qt.Key_Backspace)
@@ -54,8 +54,8 @@ def test_tag_names(qtbot, bubble_line_edit):
     line_edit = bubble_line_edit
 
     # Insert multiple tags
-    line_edit.insert_tag("apple", Bubbles.syntax_label)
-    line_edit.insert_tag("banana", Bubbles.plain_label)
+    line_edit.insert_tag("apple")
+    line_edit.insert_tag("banana")
 
     assert line_edit.tag_names() == ["apple", "banana"], "Tag names should match the inserted tags"
 
@@ -65,8 +65,8 @@ def test_tags_width(qtbot, bubble_line_edit):
     line_edit = bubble_line_edit
 
     # Insert multiple tags
-    line_edit.insert_tag("apple", Bubbles.syntax_label)
-    line_edit.insert_tag("banana", Bubbles.plain_label)
+    line_edit.insert_tag("apple")
+    line_edit.insert_tag("banana")
 
     assert line_edit.tags_width() > 0, "Tags width should be greater than zero"
 
@@ -109,20 +109,10 @@ def test_bubble_width_measurements(qtbot, bubble_line_edit):
     line_edit = bubble_line_edit
 
     # Insert a tag and check its width
-    line_edit.insert_tag("apple", Bubbles.syntax_label)
+    line_edit.insert_tag("apple")
     assert line_edit.tags_width() > 0, "Tags width should be greater than zero after inserting a tag"
 
     # Check if the width is calculated correctly
     initial_width = line_edit.tags_width()
-    line_edit.insert_tag("banana", Bubbles.plain_label)
+    line_edit.insert_tag("banana")
     assert line_edit.tags_width() > initial_width, "Tags width should increase after adding another tag"
-
-
-if __name__ == "__main__":
-    import pytest
-    import os
-
-    command = f"{os.path.abspath(__file__)} -vvv -s --cov --cov-report=html --cov-report=term"
-    print(f"Running tests with command: {command}")
-
-    pytest.main(command.split())
