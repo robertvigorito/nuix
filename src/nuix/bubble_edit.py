@@ -170,6 +170,10 @@ class LineEditWithBubbles(_LineEditWithCompleter):
             self.tags.pop().deleteLater()
             self.setTextMargins(self.tags_width(), 0, 0, 0)
             return None
+        # Prevent text if the limit is reached
+        if self.LIMIT > 0 and len(self.tags) >= self.LIMIT:
+            self.clear()
+            return None
         # Order of the super matter when handling text conversion to bubbles.
         super().keyPressEvent(event)
         # Handle the tag insertion.
@@ -221,7 +225,6 @@ class BubbleWrap:
         >>> print(bubble_wrap.get_tags())
         >>> print(bubble_wrap.join_tags(separator=", "))
     
-
     Args:
         items (list[str], optional): List of items for the bubble editor. Defaults to an empty list.
         limit (int, optional): Maximum number of tags allowed. Defaults to 10.
@@ -300,37 +303,43 @@ class BubbleWrap:
         return item in self.get_tags()
 
 
-# class DropDownTagger(_QtWidgets.QWidget):
-#     def __init__(self, parent=None) -> None:
-#         super().__init__(parent)
+class DropDownTagger(_QtWidgets.QWidget):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
 
-#         self.form_layout = _QtWidgets.QFormLayout()
-#         self.setLayout(self.form_layout)
+        self.form_layout = _QtWidgets.QFormLayout()
+        self.setLayout(self.form_layout)
 
-#         self.tag = BubbleWrap(
-#             items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0
-#         )
+        self.tag = BubbleWrap(
+            items=["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "Honeydew"], limit=0
+        )
 
-#         self.form_layout.addRow("Labels", self.tag.widget)
-#         self.delete_me()
+        self.version = BubbleWrap(validator="\d+", items=["auto", "script", "something"], limit=1)
 
-#     def delete_me(self):
-#         self.setGeometry(0, 0, 300, 200)
-#         screen = _QtWidgets.QApplication.primaryScreen()
-#         screen_size = screen.size()
-#         window_size = self.size()
-#         x = (screen_size.width() - window_size.width()) / 2
-#         y = (screen_size.height() - window_size.height()) / 2 - 300
-#         self.move(x, y)
+        self.form_layout.addRow("Labels", self.tag.widget)
+        self.form_layout.addRow("Version", self.version.widget)
+
+        # Set focus on the version widget
+        self.version.widget.setFocus()
+        self.delete_me()
+
+    def delete_me(self):
+        self.setGeometry(0, 0, 300, 200)
+        screen = _QtWidgets.QApplication.primaryScreen()
+        screen_size = screen.size()
+        window_size = self.size()
+        x = (screen_size.width() - window_size.width()) / 2
+        y = (screen_size.height() - window_size.height()) / 2 - 300
+        self.move(x, y)
 
 
-# if __name__ == "__main__":
-#     import sys
+if __name__ == "__main__":
+    import sys
 
-#     app = _QtWidgets.QApplication(sys.argv)
-#     window = DropDownTagger()
-#     window.show()
-#     window.tag.set_text("banana")
-#     window.tag.set_text("banana_")
-#     window.tag.set_text("_")
-#     sys.exit(app.exec_())
+    app = _QtWidgets.QApplication(sys.argv)
+    window = DropDownTagger()
+    window.show()
+    window.tag.set_text("banana")
+    window.tag.set_text("banana_")
+    window.tag.set_text("_")
+    sys.exit(app.exec_())
