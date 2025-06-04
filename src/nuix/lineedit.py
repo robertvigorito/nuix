@@ -2,6 +2,7 @@
 
 # pyright: disable=too-few-public-methods
 
+from typing import Optional as _Optional
 from PySide2 import QtCore as _QtCore
 from PySide2 import QtGui as _QtGui
 from PySide2 import QtWidgets as _QtWidgets
@@ -11,6 +12,7 @@ class LineEditValidator(_QtWidgets.QLineEdit):  # pylint: disable=too-few-public
     """The line edit with a validator."""
 
     DEFAULT_VALIDATOR_PATTERN = r"[a-zA-Z]+[a-zA-Z0-9_]+"
+    VALIDATOR_PATTERN = DEFAULT_VALIDATOR_PATTERN
 
     def __init__(self, parent=None, text="", validator=None) -> None:
         """The initiation method.
@@ -21,8 +23,8 @@ class LineEditValidator(_QtWidgets.QLineEdit):  # pylint: disable=too-few-public
         """
         super().__init__(parent)
         self.setText(str(text))
-        self.setValidator(_QtGui.QRegExpValidator(validator or self.DEFAULT_VALIDATOR_PATTERN))  # type: ignore
-        self.VALIDATOR_PATTERN = validator or self.DEFAULT_VALIDATOR_PATTERN
+        self.VALIDATOR_PATTERN = validator or self.DEFAULT_VALIDATOR_PATTERN  # pylint: disable=invalid-name
+        self.setValidator(_QtGui.QRegExpValidator(self.VALIDATOR_PATTERN))  # type: ignore
         self.setClearButtonEnabled(True)
 
 
@@ -32,18 +34,24 @@ class LineEditWithCompleter(LineEditValidator):
     Unfortunately, the default completer can only support one and this class provides both options.
     """
 
-    def __init__(self, parent=None, text="", items=None, validator=None) -> None:
+    def __init__(
+        self, parent=None, text: str = "", items: _Optional[list[str]] = None, validator: _Optional[str] = None
+    ) -> None:
         """The initiation method.
 
         Args:
-            parent ([type], optional): The parent widget. Defaults to None.
+            parent (QWidget | None, optional): The parent widget. Defaults to None.
             text (str, optional): The text to display on the line edit. Defaults to "".
-            items ([type], optional): The items to display in the completer. Defaults to None.
+            items (Optional[list[str]], optional): The items to display in the completer. Defaults to None.
+            validator (Optional[str], optional): The regex pattern for validation. Defaults to None.
         """
-        super().__init__(parent)
-        self.complete_items = items or []
+        # Update the regex to allow you to type the items
+        if validator:
+            validator = validator + r"|^" + "|".join(items or [])
+
+        super().__init__(parent, text, validator)
+        self.complete_items: list[str] = items or []
         # Needs to be the first line or the overwritten setText will not work
-        self.setText(str(text))
         self.setCompleter(_QtWidgets.QCompleter())
         self.completer().setModel(_QtCore.QStringListModel(self.complete_items))
         self.setValidator(_QtGui.QRegExpValidator(validator or self.VALIDATOR_PATTERN))  # type: ignore
