@@ -1,8 +1,8 @@
 """Convenience helpers for storing application settings with Qt."""
 
-from dataclasses import dataclass
 from collections.abc import Mapping
-from typing import Any, Optional
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import Any, Optional, Union
 
 from qtpy import QtCore as _QtCore
 
@@ -58,14 +58,29 @@ class Settings:
         self._settings.setValue(key, value)
         return value
 
-    def update(self, values: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> None:
-        """Persist multiple values and sync them to the backing store."""
+    @staticmethod
+    def _as_mapping(values: Optional[Union[Mapping[str, Any], object]]) -> dict[str, Any]:
+        if values is None:
+            return {}
+        if is_dataclass(values) and not isinstance(values, type):
+            return asdict(values)
+        if isinstance(values, Mapping):
+            return dict(values)
+        raise TypeError("values must be a mapping or dataclass instance")
 
-        updates = dict(values or {})
+    def update(self, values: Optional[Union[Mapping[str, Any], object]] = None, **kwargs: Any) -> None:
+        """Persist multiple mapping or dataclass values and sync the store."""
+
+        updates = self._as_mapping(values)
         updates.update(kwargs)
         for key, value in updates.items():
             self.write(key, value)
         self._settings.sync()
+
+    def save(self, values: Union[Mapping[str, Any], object]) -> None:
+        """Persist a dictionary or dataclass instance and sync the store."""
+
+        self.update(values)
 
     def set_default(self, key: str, value: Any) -> None:
         """Set or replace a fallback value without persisting it."""

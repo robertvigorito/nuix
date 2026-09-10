@@ -1,5 +1,7 @@
 """Tests for the QSettings convenience wrapper."""
 
+from dataclasses import dataclass
+
 from qtpy import QtCore
 
 from nuix import Settings
@@ -38,3 +40,18 @@ def test_missing_item_behaves_like_mapping(qtbot, tmp_path):
         assert error.args == ("missing",)
     else:
         raise AssertionError("Missing settings should raise KeyError")
+
+
+def test_save_accepts_dictionary_and_dataclass(qtbot, tmp_path):
+    @dataclass
+    class Preferences:
+        theme: str
+        compact: bool
+
+    settings = QtCore.QSettings(str(tmp_path / "settings.ini"), QtCore.QSettings.IniFormat)
+    wrapper = Settings(settings=settings)
+
+    wrapper.save({"font_size": 12})
+    wrapper.save(Preferences("dark", True))
+
+    assert wrapper.get_all() == {"compact": True, "font_size": 12, "theme": "dark"}
