@@ -1,4 +1,53 @@
-"""Convenience helpers for storing application settings with Qt."""
+"""Convenience helpers for storing application settings with Qt.
+
+``Settings`` provides a small, mapping-like API around ``QSettings`` while
+keeping application defaults in one place. Values can be saved individually,
+as a dictionary, or from a dataclass.
+
+For example, a form widget can restore its fields when it opens and save them
+when it closes::
+
+    from dataclasses import dataclass
+
+    from qtpy import QtWidgets
+
+    from nuix.settings import Settings
+
+
+    @dataclass
+    class FormValues:
+        name: str = ""
+        email: str = ""
+
+
+    class ProfileForm(QtWidgets.QWidget):
+        def __init__(self):
+            super().__init__()
+            self.settings = Settings(
+                organization="Example",
+                application="ProfileForm",
+                defaults={"name": "", "email": ""},
+            )
+            self.name_edit = QtWidgets.QLineEdit()
+            self.email_edit = QtWidgets.QLineEdit()
+            layout = QtWidgets.QFormLayout(self)
+            layout.addRow("Name", self.name_edit)
+            layout.addRow("Email", self.email_edit)
+            self.restore_form()
+
+        def restore_form(self):
+            self.name_edit.setText(self.settings.read("name"))
+            self.email_edit.setText(self.settings.read("email"))
+
+        def closeEvent(self, event):
+            self.settings.save(
+                FormValues(
+                    name=self.name_edit.text(),
+                    email=self.email_edit.text(),
+                )
+            )
+            event.accept()
+"""
 
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, is_dataclass
