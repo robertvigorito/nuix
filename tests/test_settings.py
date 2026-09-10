@@ -1,6 +1,6 @@
 """Tests for the QSettings convenience wrapper."""
 
-from PySide2 import QtCore
+from qtpy import QtCore
 
 from nuix import Settings
 
@@ -23,6 +23,8 @@ def test_write_and_update_persist_values(qtbot, tmp_path):
     assert wrapper.read("enabled", value_type=bool) is True
     assert wrapper["count"] == 2
     assert set(wrapper.keys()) == {"count", "enabled", "name"}
+    assert wrapper.get_all() == {"count": 2, "enabled": True, "name": "nuix"}
+    assert [record.key for record in wrapper.get_all_records()] == ["count", "enabled", "name"]
 
 
 def test_missing_item_behaves_like_mapping(qtbot, tmp_path):

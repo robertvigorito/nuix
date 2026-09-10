@@ -12,6 +12,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 pyside2 = "^5.15.2.1"
+qtpy = "^2.4.3"
 
 
 [tool.poetry.group.dev.dependencies]

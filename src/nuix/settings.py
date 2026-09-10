@@ -1,9 +1,18 @@
 """Convenience helpers for storing application settings with Qt."""
 
+from dataclasses import dataclass
 from collections.abc import Mapping
 from typing import Any, Optional
 
-from PySide2 import QtCore as _QtCore
+from qtpy import QtCore as _QtCore
+
+
+@dataclass(frozen=True)
+class Setting:
+    """A named setting value returned by :meth:`Settings.get_all_records`."""
+
+    key: str
+    value: Any
 
 
 class Settings:
@@ -68,6 +77,16 @@ class Settings:
 
         return sorted(set(self._settings.allKeys()).union(self._defaults))
 
+    def get_all(self) -> dict[str, Any]:
+        """Return all persisted settings, supplemented by configured defaults."""
+
+        return {key: self.read(key) for key in self.keys()}
+
+    def get_all_records(self) -> list[Setting]:
+        """Return all settings as immutable dataclass records."""
+
+        return [Setting(key, value) for key, value in self.get_all().items()]
+
     def __contains__(self, key: object) -> bool:
         return key in self._defaults or self._settings.contains(str(key))
 
@@ -83,4 +102,4 @@ class Settings:
 
 QSettingsExtension = Settings
 
-__all__ = ["Settings", "QSettingsExtension"]
+__all__ = ["Setting", "Settings", "QSettingsExtension"]
