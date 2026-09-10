@@ -2,7 +2,6 @@
 
 import dataclasses as _dataclasses
 import re as _re
-import typing as _typing
 
 from PySide2 import QtCore as _QtCore
 from PySide2 import QtGui as _QtGui
@@ -106,7 +105,7 @@ class LineEditWithBubbles(_LineEditWithCompleter):
         self.completer().activated.connect(lambda: _QtCore.QTimer.singleShot(0, self.clear))
         self.editingFinished.connect(self.editing_finished_trigger)
 
-    def get_syntax_label(self, text: str) -> _typing.Optional[Bubbles]:
+    def get_syntax_label(self, text: str) -> Bubbles:
         """Get a syntax label with the given text.
 
         Args:

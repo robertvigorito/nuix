@@ -2,7 +2,6 @@
 
 # pyright: disable=too-few-public-methods
 
-from typing import Optional as _Optional
 from PySide2 import QtCore as _QtCore
 from PySide2 import QtGui as _QtGui
 from PySide2 import QtWidgets as _QtWidgets
@@ -35,7 +34,7 @@ class LineEditWithCompleter(LineEditValidator):
     """
 
     def __init__(
-        self, parent=None, text: str = "", items: _Optional[list[str]] = None, validator: _Optional[str] = None
+        self, parent=None, text: str = "", items: list[str] = None, validator: str = None
     ) -> None:
         """The initiation method.
 

@@ -2,7 +2,6 @@
 
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Optional, Union
 
 from qtpy import QtCore as _QtCore
 
@@ -12,7 +11,7 @@ class Setting:
     """A named setting value returned by :meth:`Settings.get_all_records`."""
 
     key: str
-    value: Any
+    value: object
 
 
 class Settings:
@@ -25,10 +24,10 @@ class Settings:
 
     def __init__(
         self,
-        organization: Optional[str] = None,
-        application: Optional[str] = None,
-        defaults: Optional[Mapping[str, Any]] = None,
-        settings: Optional[_QtCore.QSettings] = None,
+        organization: str = None,
+        application: str = None,
+        defaults: Mapping[str, object] = None,
+        settings: _QtCore.QSettings = None,
     ) -> None:
         if settings is not None:
             self._settings = settings
@@ -44,7 +43,7 @@ class Settings:
 
         return self._settings
 
-    def read(self, key: str, default: Any = None, value_type: Optional[type] = None) -> Any:
+    def read(self, key: str, default: object = None, value_type: type = None) -> object:
         """Read a value, using configured defaults before ``default``."""
 
         fallback = self._defaults.get(key, default)
@@ -52,14 +51,14 @@ class Settings:
             return self._settings.value(key, fallback)
         return self._settings.value(key, fallback, type=value_type)
 
-    def write(self, key: str, value: Any) -> Any:
+    def write(self, key: str, value: object) -> object:
         """Persist one value and return it."""
 
         self._settings.setValue(key, value)
         return value
 
     @staticmethod
-    def _as_mapping(values: Optional[Union[Mapping[str, Any], object]]) -> dict[str, Any]:
+    def _as_mapping(values: object = None) -> dict[str, object]:
         if values is None:
             return {}
         if is_dataclass(values) and not isinstance(values, type):
@@ -68,7 +67,7 @@ class Settings:
             return dict(values)
         raise TypeError("values must be a mapping or dataclass instance")
 
-    def update(self, values: Optional[Union[Mapping[str, Any], object]] = None, **kwargs: Any) -> None:
+    def update(self, values: object = None, **kwargs: object) -> None:
         """Persist multiple mapping or dataclass values and sync the store."""
 
         updates = self._as_mapping(values)
@@ -77,12 +76,12 @@ class Settings:
             self.write(key, value)
         self._settings.sync()
 
-    def save(self, values: Union[Mapping[str, Any], object]) -> None:
+    def save(self, values: object) -> None:
         """Persist a dictionary or dataclass instance and sync the store."""
 
         self.update(values)
 
-    def set_default(self, key: str, value: Any) -> None:
+    def set_default(self, key: str, value: object) -> None:
         """Set or replace a fallback value without persisting it."""
 
         self._defaults[key] = value
@@ -92,7 +91,7 @@ class Settings:
 
         return sorted(set(self._settings.allKeys()).union(self._defaults))
 
-    def get_all(self) -> dict[str, Any]:
+    def get_all(self) -> dict[str, object]:
         """Return all persisted settings, supplemented by configured defaults."""
 
         return {key: self.read(key) for key in self.keys()}
@@ -105,7 +104,7 @@ class Settings:
     def __contains__(self, key: object) -> bool:
         return key in self._defaults or self._settings.contains(str(key))
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> object:
         value = self.read(key)
         if value is None and key not in self._defaults and not self._settings.contains(key):
             raise KeyError(key)
