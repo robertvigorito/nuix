@@ -7,6 +7,9 @@ __all__ = [
     "LineEditWithBubbles",
     "BubbleWrap",
     "LineEditWithBubbles",
+    "Settings",
+    "QSettingsExtension",
 ]
 from nuix.bubble_edit import BubbleWrap, LineEditWithBubbles
 from nuix.lineedit import LineEditValidator, LineEditWithCompleter, LineEditWithInlineCompleter
+from nuix.settings import QSettingsExtension, Settings
