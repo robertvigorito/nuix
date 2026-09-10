@@ -55,3 +55,16 @@ def test_save_accepts_dictionary_and_dataclass(qtbot, tmp_path):
     wrapper.save(Preferences("dark", True))
 
     assert wrapper.get_all() == {"compact": True, "font_size": 12, "theme": "dark"}
+
+
+def test_dataclass_fields_are_used_as_keys(qtbot, tmp_path):
+    @dataclass
+    class Preferences:
+        theme: str = "light"
+        compact: bool = False
+
+    settings = QtCore.QSettings(str(tmp_path / "settings.ini"), QtCore.QSettings.IniFormat)
+    wrapper = Settings(settings=settings)
+    wrapper.save(Preferences(theme="dark", compact=True))
+
+    assert wrapper.get(Preferences) == Preferences(theme="dark", compact=True)

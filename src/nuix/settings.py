@@ -36,8 +36,9 @@ when it closes::
             self.restore_form()
 
         def restore_form(self):
-            self.name_edit.setText(self.settings.read("name"))
-            self.email_edit.setText(self.settings.read("email"))
+            values = self.settings.get(FormValues)
+            self.name_edit.setText(values.name)
+            self.email_edit.setText(values.email)
 
         def closeEvent(self, event):
             self.settings.save(
@@ -50,7 +51,7 @@ when it closes::
 """
 
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import MISSING, asdict, dataclass, fields, is_dataclass
 
 from qtpy import QtCore as _QtCore
 
@@ -75,7 +76,7 @@ class Settings:
         self,
         organization: str = None,
         application: str = None,
-        defaults: Mapping[str, object] = None,
+        defaults: object = None,
         settings: _QtCore.QSettings = None,
     ) -> None:
         if settings is not None:
@@ -84,7 +85,7 @@ class Settings:
             self._settings = _QtCore.QSettings()
         else:
             self._settings = _QtCore.QSettings(organization or "", application or "")
-        self._defaults = dict(defaults or {})
+        self._defaults = self._as_mapping(defaults)
 
     @property
     def qsettings(self) -> _QtCore.QSettings:
@@ -99,6 +100,30 @@ class Settings:
         if value_type is None:
             return self._settings.value(key, fallback)
         return self._settings.value(key, fallback, type=value_type)
+
+    def get(self, model: type) -> object:
+        """Load a dataclass using its field names as settings keys.
+
+        This avoids repeating string keys at call sites::
+
+            values = settings.get(FormValues)
+            self.name_edit.setText(values.name)
+        """
+
+        if not isinstance(model, type) or not is_dataclass(model):
+            raise TypeError("model must be a dataclass type")
+        values = {}
+        for field in fields(model):
+            default = self._defaults.get(field.name, MISSING)
+            if default is MISSING:
+                default = field.default
+            if default is MISSING and field.default_factory is not MISSING:
+                default = field.default_factory()
+            value_type = field.type if isinstance(field.type, type) else None
+            values[field.name] = self.read(field.name, None if default is MISSING else default, value_type)
+        return model(**values)
+
+    load = get
 
     def write(self, key: str, value: object) -> object:
         """Persist one value and return it."""
@@ -159,7 +184,7 @@ class Settings:
             raise KeyError(key)
         return value
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: object) -> None:
         self.write(key, value)
 
 
